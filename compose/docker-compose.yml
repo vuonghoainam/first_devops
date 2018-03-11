@@ -1,0 +1,26 @@
+version: '3.3'
+services:
+  phpfpm:
+    image: 'php:fpm'
+    restart: always
+    ports:
+      - '9000'
+    volumes:
+      - './source/maria:/usr/share/nginx/html'
+  maria:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+    volumes:
+      - './database:/var/lib/mysql'
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    links:
+      - maria
+    ports:
+      - '8080:80'
+    environment:
+      MYSQL_USERNAME: nam
+      MYSQL_ROOT_PASSWORD: nam
+      PMA_ARBITRARY: 1
