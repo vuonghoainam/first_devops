@@ -1,2 +1,8 @@
 
 variables.tf
+*.pem
+aws_credentials
+*.info
+.terraform
+*.tfstate
+*.backup
