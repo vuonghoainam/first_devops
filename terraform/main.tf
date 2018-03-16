@@ -3,16 +3,22 @@ provider "aws" {
 }
 
 resource "aws_security_group" "default" {
-    count = "${var.aws_security_group.sg_count}"
+    count = "${var.aws_security_group["sg_count"]}"
 
-    name = "terraform_security_group_${lookup(var.aws_security_group, concat("sg_", count.index, "_name"))}"
-    description = "AWS security group for terraform example"
+    name = "terraform_security_group_"
+    description = "AWS security group for terraform"
 
     ingress {
-        from_port   = "${lookup(var.aws_security_group, concat("sg_", count.index, "_from_port"))}"
-        to_port     = "${lookup(var.aws_security_group, concat("sg_", count.index, "_to_port"))}"
-        protocol    = "${lookup(var.aws_security_group, concat("sg_", count.index, "_protocol"))}"
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
         cidr_blocks = [ "0.0.0.0/0" ]
+    }
+    egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
     }
 
     tags {
@@ -23,6 +29,12 @@ resource "aws_security_group" "default" {
 resource "aws_elb" "web" {
     name = "terraform"
 
+    // listener {
+    //     instance_port       = 80
+    //     instance_protocol   = "http"
+    //     lb_port             = 443
+    //     lb_protocol         = "https"
+    // }
     listener {
         instance_port       = 80
         instance_protocol   = "http"
@@ -44,7 +56,7 @@ resource "aws_instance" "web" {
 
     instance_type = "${var.aws_instance_type}"
     ami = "${lookup(var.aws_amis, var.aws_region)}"
-    availability_zone = "${lookup(var.aws_availability_zones, count.index)}"
+    availability_zone = "us-west-2a"
 
     key_name = "${var.aws_key_name}"
     security_groups = [ "${aws_security_group.default.*.name}" ]
@@ -52,23 +64,21 @@ resource "aws_instance" "web" {
 
     connection {
         user = "${var.aws_instance_user}"
-        key_file = "${var.aws_key_path}"
-    }
-
-    provisioner "file" {
-        source = "compose/"
-        destination = "/tmp/"
+        type = "ssh"
+        private_key = "${file("grap.pem")}"
+        timeout = "2m"
+        agent = false
     }
 
     provisioner "remote-exec" {
         inline = [
-            "sudo yum install -y docker epel-release python-pip git",
-            "sudo systemctl start docker.service && systemctl enable docker.service",
-            "sudo pip install docker-compose",
-            "git clone "
-            "sudo docker run -d -p 80:80 -v /tmp:/usr/share/nginx/html --name nginx_${count.index} nginx",
-            "sudo sed -iE \"s/{{ hostname }}/`hostname`/g\" /tmp/index.html",
-            "sudo sed -iE \"s/{{ container_name }}/nginx_${count.index}/g\" /tmp/index.html"
+            "sudo apt-get -y install git",
+            "curl -sSL https://get.docker.com/ | sudo bash",
+            "sudo curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose",
+            "sudo chmod +x /usr/local/bin/docker-compose",
+            "git clone https://github.com/vuonghoainam/first_devops.git",
+            "cd first_devops/compose",
+            "docker-compose up -d",
         ]
     }
 
