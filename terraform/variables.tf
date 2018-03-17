@@ -26,6 +26,13 @@ variable "aws_availability_zones" {
     }
 }
 
+variable "github_credentials" {
+    default = {
+        "userpass":"xxxx:xx",
+        "secret_key": "sha256:..."   
+    }
+}
+
 variable "aws_security_group" {
     default = {
         sg_count                = 1
